@@ -103,7 +103,8 @@ FROM BON,
      ARTICLE
 WHERE BON.ID = COMPO.ID_BON
   AND COMPO.ID_ART = ARTICLE.ID
-GROUP BY NUMERO_COMMANDE HAVING SUM(COMPO.QTE) > 25
+GROUP BY NUMERO_COMMANDE
+HAVING SUM(COMPO.QTE) > 25
 
 -- p. Calculez le coût total des commandes effectuées sur le mois d'avril
 
@@ -125,3 +126,35 @@ FROM BON,
 WHERE BON.ID = COMPO.ID_BON
   AND COMPO.ID_ART = ARTICLE.ID
   AND BON.DATE_CMDE BETWEEN '2019-04-01' AND '2019-04-30'
+
+/*Requêtes difficiles*/
+
+-- a. Sélectionnez les articles qui ont une désignation identique mais des fournisseurs
+-- différents (indice : réaliser une auto-jointure i.e. de la table avec elle-même)
+
+SELECT *
+FROM ARTICLE a,
+     ARTICLE b
+WHERE a.DESIGNATION = b.DESIGNATION
+  AND a.ID_FOU != b.ID_FOU
+
+-- b. Calculez les dépenses en commandes mois par mois (indice : utilisation des fonctions MONTH et YEAR)
+
+-- c. Sélectionnez les bons de commandes sans article (indice : utilisation de EXISTS)
+SELECT *
+FROM BON
+WHERE NOT EXISTS (SELECT * FROM COMPO WHERE COMPO.ID_BON = BON.ID);
+
+-- d. Calculez le prix moyen des bons de commande par fournisseur.
+WITH PRIX_COMMANDE_TABLE AS (SELECT BON.ID, SUM(COMPO.QTE * ARTICLE.PRIX) AS PRIX_COMMANDE
+                       FROM BON,
+                            COMPO,
+                            ARTICLE
+                       WHERE COMPO.ID_BON = BON.ID
+                       AND COMPO.ID_ART = ARTICLE.ID
+                       GROUP BY COMPO.ID_BON)
+SELECT BON.ID_FOU, AVG(PRIX_COMMANDE)
+FROM BON,
+     PRIX_COMMANDE_TABLE
+WHERE BON.ID = PRIX_COMMANDE_TABLE.ID
+GROUP BY BON.ID_FOU
